@@ -1,11 +1,10 @@
 package com.rocketsolutions
 
 import com.rocketsolutions.config.Configuration
-import com.rocketsolutions.db.Persistence
+import com.rocketsolutions.db.user.DoobieUserRepository
 import com.rocketsolutions.web.WebServer
 import scalaz.zio._
 import scalaz.zio.clock.Clock
-import scalaz.zio.console.Console
 
 object Main extends App {
 
@@ -15,8 +14,8 @@ object Main extends App {
       conf <- Configuration.load
       _    <- WebServer
               .server(conf.http)
-              .provideSome[Environment](_ => new Console.Live with Clock.Live with Persistence.Live {
-                 override protected def transactor = Persistence.xa(conf.db)
+              .provide(new Clock.Live with DoobieUserRepository {
+                 override protected def transactor = DoobieUserRepository.xa(conf.db)
               })
     } yield ()
 

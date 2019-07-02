@@ -1,13 +1,13 @@
 package com.rocketsolutions
 
-import com.rocketsolutions.db.Persistence
+import com.rocketsolutions.db.user.UserRepository
 import scalaz.zio.TaskR
 import scalaz.zio.clock.Clock
 import scalaz.zio.console.Console
 
 package object main {
 
-  type AppEnv = Console with Clock with Persistence
+  type AppEnv = Clock with UserRepository
   type AppTask[A] = TaskR[AppEnv, A]
 
 }

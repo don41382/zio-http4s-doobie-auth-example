@@ -9,7 +9,7 @@ import org.http4s.dsl.Http4sDsl
 import org.http4s.implicits._
 import org.http4s.server.Router
 import org.http4s.server.blaze.BlazeServerBuilder
-import scalaz.zio._
+import scalaz.zio.{ZIO, _}
 import scalaz.zio.interop.catz._
 
 
@@ -20,7 +20,7 @@ object WebServer {
   def route: HttpRoutes[AppTask] = Router(
       "/" -> Routes.listUsers,
       "/secure" -> Routes.secureArea
-    ).mapF { case OptionT(task) => OptionT(task.absorb) } // flatten all dies to fails
+    ).mapF { case OptionT(task) => OptionT(squashDefects(task)) }
 
   def server(conf: HttpConfig): ZIO[AppEnv, Throwable, Unit] =
     ZIO.runtime[AppEnv].flatMap { implicit rts => for {
@@ -34,5 +34,10 @@ object WebServer {
                 .drain
     } yield ()
   }
+
+  def squashDefects(task: ZIO[AppEnv, Throwable, Option[Response[AppTask]]]): ZIO[AppEnv, Throwable, Option[Response[AppTask]]] =
+    task.sandbox.foldM(
+      ex => ZIO.effectTotal(println(ex.prettyPrint)) *> ZIO.fail(ex.squash),
+      ZIO.succeed)
 
 }

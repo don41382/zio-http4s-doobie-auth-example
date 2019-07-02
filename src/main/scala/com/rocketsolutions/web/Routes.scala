@@ -33,7 +33,8 @@ object Routes {
   case class GlobalHttpError(reason: String)
 
   def parseError: ServiceErrorHandler[AppTask] = _ => {
-    case ex: Exception => InternalServerError(GlobalHttpError(ex.getMessage))
+    case ex: Exception =>
+      InternalServerError(GlobalHttpError(ex.getMessage))
   }
 }
 

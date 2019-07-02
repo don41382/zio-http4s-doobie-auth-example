@@ -26,6 +26,7 @@ resolvers ++= Seq(
 val Http4sVersion = "0.21.0-M1"
 val CirceVersion = "0.12.0-M3"
 val ZIOVersion = "1.0-RC5"
+val ScalaTestVersion  = "3.0.5"
 
 libraryDependencies ++= Seq(
   // ZIO
@@ -44,5 +45,7 @@ libraryDependencies ++= Seq(
   "org.tpolecat" %% "doobie-core"      % "0.7.0",
   "org.tpolecat" %% "doobie-postgres"  % "0.7.0",
   // config
-  "com.github.pureconfig" %% "pureconfig" % "0.11.1"
+  "com.github.pureconfig" %% "pureconfig" % "0.11.1",
+  // test
+  "org.scalatest" %% "scalatest" % ScalaTestVersion % "test",
 )
