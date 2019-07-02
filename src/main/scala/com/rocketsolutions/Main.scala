@@ -1,6 +1,6 @@
 package com.rocketsolutions
 
-import com.rocketsolutions.config.Configuration
+import com.rocketsolutions.config.{AppConfiguration, Configuration}
 import com.rocketsolutions.db.user.DoobieUserRepository
 import com.rocketsolutions.web.WebServer
 import scalaz.zio._
@@ -10,8 +10,8 @@ object Main extends App {
 
   override def run(args: List[String]): ZIO[Environment, Nothing, Int] = {
 
-    val program: ZIO[Environment, Throwable, Unit] = for {
-      conf <- Configuration.load
+    def program(appConf: TaskR[Any, AppConfiguration]) : ZIO[Environment, Throwable, Unit] = for {
+      conf <- appConf
       _    <- WebServer
               .server(conf.http)
               .provide(new Clock.Live with DoobieUserRepository {
@@ -19,7 +19,7 @@ object Main extends App {
               })
     } yield ()
 
-    program.foldM(
+    program(Configuration.loadLive).foldM(
       err =>
         ZIO.effectTotal(println(s"error during runtime: ${err.getMessage}")) *> ZIO.effectTotal(err.printStackTrace()) *> ZIO.succeed(1),
       res =>

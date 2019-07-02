@@ -1,19 +1,19 @@
 package com.rocketsolutions.web
 
-import com.rocketsolutions.{HTTPSpec, web}
+import com.rocketsolutions.HTTPSpec
+import com.rocketsolutions.config.Configuration
 import com.rocketsolutions.db.user.{DoobieUserRepository, UserRepository}
-import com.rocketsolutions.db.user.UserRepository.InMemoryUserRepository
 import com.rocketsolutions.main.{AppEnv, AppTask}
 import com.rocketsolutions.model.User
-import io.circe.generic.auto._
 import io.circe.Decoder
+import io.circe.generic.auto._
 import org.http4s
 import org.http4s.circe._
 import org.http4s.headers.Authorization
 import org.http4s.implicits._
 import org.http4s.{Status, _}
-import scalaz.zio.clock.Clock
 import scalaz.zio._
+import scalaz.zio.clock.Clock
 import scalaz.zio.interop.catz._
 
 class RouteSpec extends HTTPSpec {
@@ -32,11 +32,8 @@ class RouteSpec extends HTTPSpec {
         check[AppTask,List[User]](
           createTable *> app.run(req),
           Status.Ok,
-          Some(List(
-            User(1,"Felix","password"),
-            User(2,"Klaus","123456"))
-          ))
-      )
+          Some(UserRepository.defaultUser)
+      ))
     }
 
     it("should return unauthorized on invalid login") {
@@ -77,9 +74,9 @@ object RouteSpec extends DefaultRuntime {
 
   def runWithEnv[E, A](task: AppTask[A]) =
     unsafeRun (for {
-        ref <- Ref.make(List.empty[User])
-        env: AppEnv = new Clock.Live with UserRepository {
-          override val userPersistence: UserRepository.Service[Any] = InMemoryUserRepository(ref)
+        conf <- Configuration.loadTest
+        env: AppEnv = new Clock.Live with DoobieUserRepository {
+          override protected def transactor = DoobieUserRepository.xa(conf.db)
         }
         task <- task.provide(env)
       } yield task

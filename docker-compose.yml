@@ -10,3 +10,12 @@ services:
       POSTGRES_PASSWORD: example
     ports:
     - 54320:5432
+
+  db_test:
+    image: postgres
+    restart: always
+    environment:
+      POSTGRES_USER: example
+      POSTGRES_PASSWORD: example
+    ports:
+    - 54321:5432

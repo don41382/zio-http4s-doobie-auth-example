@@ -3,6 +3,7 @@ package com.rocketsolutions.db.user
 import com.rocketsolutions.config.DBConfig
 import com.rocketsolutions.db.user.UserRepository.Service
 import com.rocketsolutions.db.{UserError, UserNotFound}
+import com.rocketsolutions.main.AppTask
 import com.rocketsolutions.model.User
 import doobie.implicits._
 import doobie.util.transactor.Transactor
@@ -19,14 +20,15 @@ trait DoobieUserRepository extends UserRepository {
       sql"""
            | DROP TABLE IF EXISTS Users;
            | CREATE TABLE Users (id int PRIMARY KEY, name varchar, password varchar);
-           | INSERT INTO Users VALUES (1, 'Felix', 'password');
-           | INSERT INTO Users VALUES (2, 'Klaus', '123456');
            """.stripMargin
         .update
         .run
         .transact(transactor)
         .orDie
-        .unit
+        .unit *> insertDefaultUser
+
+    def insertDefaultUser: UIO[Unit] =
+      IO.foldLeft[Any, Nothing, Unit, User](UserRepository.defaultUser)(Unit)((_,u: User) => insertUser(u))
 
     override def testDatabase: UIO[Unit] =
       sql"""SELECT 1"""
@@ -43,6 +45,14 @@ trait DoobieUserRepository extends UserRepository {
         .transact(transactor)
         .orDie
 
+    override def insertUser(u: User): UIO[Unit] =
+      sql"""INSERT INTO Users (id, name, password) VALUES (${u.id}, ${u.name}, ${u.password})"""
+        .update
+        .run
+        .transact(transactor)
+        .orDie
+        .unit
+
 
     override def authUser(name: String, password: String): IO[UserError, User] =
       sql"""SELECT id, name, password FROM Users u where LOWER(u.name) = ${name.toLowerCase} AND LOWER(u.password) = ${password.toLowerCase}"""
@@ -51,8 +61,8 @@ trait DoobieUserRepository extends UserRepository {
         .transact(transactor)
         .orDie
         .flatMap {
-          case Some(name)                    => ZIO.succeed(name)
-          case None                          => ZIO.fail(UserNotFound)
+          case Some(name) => ZIO.succeed(name)
+          case None => ZIO.fail(UserNotFound)
         }
 
   }
